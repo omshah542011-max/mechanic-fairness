@@ -134,14 +134,26 @@ export default function ScamDetector() {
     setGaugeReady(false);
 
     try {
-      let messages;
+      let apiMessages;
       if (mode === "text") {
-        messages = [{ role: "user", content: `What the mechanic did: ${description}\nHow much they charged: ${price}\nLocation: ${location}\n\nWas this fair?` }];
+        apiMessages = [
+          { role: "system", content: SYSTEM },
+          { role: "user", content: `What the mechanic did: ${description}\nHow much they charged: ${price}\nLocation: ${location}\n\nWas this fair?` }
+        ];
       } else {
-        messages = [{ role: "user", content: [
-          { type: "image", source: { type: "base64", media_type: imageType, data: imageBase64 } },
-          { type: "text", text: `This is my mechanic invoice. I live in ${location}. Can you check if I was charged a fair price? Please explain it simply.` }
-        ]}];
+        apiMessages = [
+          { role: "system", content: SYSTEM },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: `This is my mechanic invoice. I live in ${location}. Can you check if I was charged a fair price? Please explain it simply.` },
+              { 
+                type: "image_url", 
+                image_url: { url: `data:${imageType};base64,${imageBase64}` } 
+              }
+            ]
+          }
+        ];
       }
 
       const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -151,12 +163,10 @@ export default function ScamDetector() {
           "Authorization": `Bearer ${import.meta.env.VITE_GROQ_KEY}`
         },
         body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
-          messages: [
-            { role: "system", content: SYSTEM },
-            { role: "user", content: messages[0].content }
-          ],
-          max_tokens: 1000
+          model: "llama-3.2-11b-vision-preview",
+          messages: apiMessages,
+          max_tokens: 1000,
+          response_format: { type: "json_object" }
         })
       });
 
@@ -168,7 +178,8 @@ export default function ScamDetector() {
         setGaugeReady(true);
         setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
       }, 100);
-    } catch {
+    } catch (err) {
+      console.error("API Error details:", err);
       setResult({ verdict: "error", face: "⚠️", color: "red", fairness_score: 0, summary: "Something went wrong. Please try again.", explanation: "We couldn't connect to our analysis system. Please check your internet and try again.", red_flags: [], tip: "" });
       setGaugeReady(true);
     }
@@ -429,5 +440,3 @@ export default function ScamDetector() {
     </div>
   );
 }
-ENDOFFILE
-echo "done"
