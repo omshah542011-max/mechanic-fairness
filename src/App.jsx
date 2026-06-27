@@ -217,12 +217,12 @@ export default function ScamDetector() {
         <h1 style={{ fontSize: 30, fontWeight: 900, letterSpacing: "0.06em", margin: "0 0 8px", background: "linear-gradient(135deg,#ffffff,#8080c0)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
           Did Your Mechanic<br />Rip You Off?
         </h1>
-        <p style={{ color: "#444", fontSize: 15, margin: "0 auto", maxWidth: 320, lineHeight: 1.6 }}>
+        <p style={{ color: "#888", fontSize: 15, margin: "0 auto", maxWidth: 320, lineHeight: 1.6 }}>
           Tell us what they did and how much they charged. We'll tell you if it's fair — in plain English.
         </p>
         <div style={{ display: "flex", justifyContent: "center", gap: 16, marginTop: 16, flexWrap: "wrap" }}>
           {["No car knowledge needed", "Free to use", "Instant results"].map(t => (
-            <span key={t} style={{ fontSize: 12, color: "#333", display: "flex", alignItems: "center", gap: 5 }}>
+            <span key={t} style={{ fontSize: 12, color: "#666", display: "flex", alignItems: "center", gap: 5 }}>
               <span style={{ color: "#22c55e" }}>✓</span> {t}
             </span>
           ))}
@@ -274,7 +274,7 @@ export default function ScamDetector() {
                   </div>
                 )}
                 <textarea className="inp" rows={3} placeholder="e.g. They replaced my brake pads and said I needed new rotors too..." value={description} onChange={e => setDescription(e.target.value)} style={{ resize: "vertical" }} />
-                <p style={{ color: "#2a2a40", fontSize: 12, margin: "5px 0 0" }}>Don't know the technical name? Just describe it in your own words.</p>
+                <p style={{ color: "#555", fontSize: 12, margin: "5px 0 0" }}>Don't know the technical name? Just describe it in your own words.</p>
               </div>
               <div>
                 <div className="label">How much did they charge you?</div>
@@ -293,8 +293,8 @@ export default function ScamDetector() {
                   ? <img src={imagePreview} alt="Invoice" style={{ maxWidth: "100%", maxHeight: 200, borderRadius: 10, objectFit: "contain" }} />
                   : <div>
                       <div style={{ fontSize: 32, marginBottom: 10 }}>📄</div>
-                      <p style={{ color: "#333", margin: "0 0 4px", fontSize: 14 }}>Take a photo of your receipt and upload it here</p>
-                      <p style={{ color: "#222", margin: 0, fontSize: 12 }}>or drag and drop · JPG, PNG supported</p>
+                      <p style={{ color: "#666", margin: "0 0 4px", fontSize: 14 }}>Take a photo of your receipt and upload it here</p>
+                      <p style={{ color: "#555", margin: 0, fontSize: 12 }}>or drag and drop · JPG, PNG supported</p>
                     </div>}
                 <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => handleFile(e.target.files[0])} />
               </div>
@@ -400,7 +400,7 @@ export default function ScamDetector() {
               </button>
             </div>
  
-            <p style={{ color: "#1a1a28", fontSize: 11, textAlign: "center", margin: 0 }}>
+            <p style={{ color: "#444", fontSize: 11, textAlign: "center", margin: 0 }}>
               Results are estimates based on average market prices. Always get multiple quotes.
             </p>
           </div>
