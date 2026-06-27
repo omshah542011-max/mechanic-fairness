@@ -1,22 +1,23 @@
+cat > /mnt/user-data/outputs/scam-detector.jsx << 'ENDOFFILE'
 import { useState, useRef, useEffect } from "react";
- 
+
 const SYSTEM = `You are a friendly car repair expert helping everyday people understand if they got ripped off at a mechanic. Your audience has NO car knowledge — they are anxious, confused, and just want a straight answer.
- 
+
 Use PLAIN ENGLISH only. No technical jargon. No "Mitchell ProDemand" references in your output. Explain everything like you're talking to a friend who knows nothing about cars.
- 
+
 You have deep internal knowledge of:
 - Fair repair pricing worldwide by city and country
 - Standard labor times for all common repairs
 - OEM vs aftermarket parts pricing
 - Common mechanic scam patterns
- 
+
 fairness_score rules (0–100, where 100 = perfectly fair):
 - 90–100: Great price, no issues
 - 70–89: Acceptable, slightly high but not alarming
 - 50–69: Noticeably overpriced
 - 25–49: Significantly overpriced
 - 0–24: Scam — way too expensive or unnecessary work
- 
+
 Respond ONLY with valid JSON, no other text:
 {
   "verdict": "fair" | "overpriced" | "scam",
@@ -34,9 +35,9 @@ Respond ONLY with valid JSON, no other text:
   "red_flags": ["plain English red flag 1", "plain English red flag 2"] or [],
   "tip": "One specific tip in plain English for next time — practical and easy to follow"
 }`;
- 
+
 const EXAMPLES = ["New York, USA", "London, UK", "Sydney, Australia", "Toronto, Canada", "Dubai, UAE"];
- 
+
 const SCENARIOS = [
   "Oil change — charged $180",
   "New brake pads — charged $600",
@@ -44,14 +45,14 @@ const SCENARIOS = [
   "Battery replacement — charged $400",
   "AC recharge — charged $300"
 ];
- 
+
 function CircleGauge({ score, color, face, animated }) {
   const r = 72;
   const circ = 2 * Math.PI * r;
   const hexMap = { green: "#22c55e", yellow: "#f59e0b", red: "#ef4444" };
   const hex = hexMap[color] || "#888";
   const [current, setCurrent] = useState(0);
- 
+
   useEffect(() => {
     if (!animated) return;
     let frame;
@@ -67,10 +68,9 @@ function CircleGauge({ score, color, face, animated }) {
     frame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(frame);
   }, [score, animated]);
- 
+
   const offset = circ * (1 - current / 100);
-  const label = score >= 70 ? "Looks Fair" : score >= 40 ? "Overpriced" : "You Got Scammed";
- 
+
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
       <div style={{ position: "relative", width: 200, height: 200 }}>
@@ -89,7 +89,7 @@ function CircleGauge({ score, color, face, animated }) {
     </div>
   );
 }
- 
+
 export default function ScamDetector() {
   const [mode, setMode] = useState("text");
   const [description, setDescription] = useState("");
@@ -106,7 +106,7 @@ export default function ScamDetector() {
   const [showExamples, setShowExamples] = useState(false);
   const fileRef = useRef(null);
   const resultRef = useRef(null);
- 
+
   const hexMap = { green: "#22c55e", yellow: "#f59e0b", red: "#ef4444" };
   const bgMap = { green: "#031a0a", yellow: "#150f00", red: "#150000" };
   const borderMap = { green: "#0d3a1a", yellow: "#2a1800", red: "#2a0505" };
@@ -115,7 +115,7 @@ export default function ScamDetector() {
     overpriced: { label: "You Were Overcharged", sub: "You paid more than you should have." },
     scam: { label: "You Got Scammed", sub: "This price is way above what's normal." }
   };
- 
+
   function handleFile(file) {
     if (!file || !file.type.startsWith("image/")) return;
     setImageType(file.type);
@@ -123,16 +123,16 @@ export default function ScamDetector() {
     reader.onload = (e) => { setImagePreview(e.target.result); setImageBase64(e.target.result.split(",")[1]); };
     reader.readAsDataURL(file);
   }
- 
+
   const canAnalyze = location.trim().length > 2 && (mode === "text" ? description.trim() && price.trim() : imageBase64 !== null);
- 
+
   async function analyze() {
     if (!location.trim()) { setLocationError(true); return; }
     setLocationError(false);
     setLoading(true);
     setResult(null);
     setGaugeReady(false);
- 
+
     try {
       let messages;
       if (mode === "text") {
@@ -143,7 +143,7 @@ export default function ScamDetector() {
           { type: "text", text: `This is my mechanic invoice. I live in ${location}. Can you check if I was charged a fair price? Please explain it simply.` }
         ]}];
       }
- 
+
       const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -159,7 +159,7 @@ export default function ScamDetector() {
           max_tokens: 1000
         })
       });
- 
+
       const data = await res.json();
       const text = data.choices?.[0]?.message?.content || "{}";
       const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
@@ -174,26 +174,25 @@ export default function ScamDetector() {
     }
     setLoading(false);
   }
- 
+
   const hex = result ? (hexMap[result.color] || "#888") : "#888";
   const bgCol = result ? (bgMap[result.color] || "#150000") : "#150000";
   const borderCol = result ? (borderMap[result.color] || "#2a0505") : "#2a0505";
   const verdict = result ? (verdictMap[result.verdict] || { label: result.verdict?.toUpperCase(), sub: "" }) : null;
- 
+
   return (
     <div style={{ fontFamily: "'system-ui', -apple-system, sans-serif", background: "#08080f", minHeight: "100vh", color: "#f0f0f0" }}>
       <style>{`
         @keyframes spin { to{transform:rotate(360deg)} }
         @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-        @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
         * { box-sizing: border-box; }
         .inp { width:100%; background:#0e0e18; border:1.5px solid #1e1e30; border-radius:12px; padding:12px 15px; color:#f0f0f0; font-size:15px; font-family:inherit; outline:none; transition:border 0.2s, box-shadow 0.2s; }
         .inp:focus { border-color:#4a4a80; box-shadow: 0 0 0 3px rgba(74,74,128,0.15); }
         .inp.error { border-color:#ef4444; }
         .inp::placeholder { color:#2a2a40; }
         .mode-btn { flex:1; padding:11px 0; border-radius:10px; border:1.5px solid #1e1e30; background:transparent; color:#444; cursor:pointer; font-size:13px; font-weight:700; letter-spacing:0.03em; transition:all 0.2s; font-family:inherit; }
-        .mode-btn.active { background:#14141f; color:#c0c0e0; border-color:#3a3a60; box-shadow: 0 0 0 1px #3a3a6033; }
+        .mode-btn.active { background:#14141f; color:#c0c0e0; border-color:#3a3a60; }
         .go-btn { width:100%; padding:15px; border-radius:12px; border:none; background:linear-gradient(135deg,#ffffff,#d0d0f0); color:#08080f; font-size:15px; font-weight:800; letter-spacing:0.06em; cursor:pointer; transition:all 0.2s; font-family:inherit; }
         .go-btn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 8px 30px rgba(255,255,255,0.15); }
         .go-btn:disabled { opacity:0.25; cursor:not-allowed; transform:none; }
@@ -206,11 +205,12 @@ export default function ScamDetector() {
         .flag { display:flex; gap:10px; font-size:14px; color:#fca5a5; padding:8px 0; border-bottom:1px solid #1a1a28; line-height:1.5; }
         .flag:last-child { border-bottom:none; }
         .card { background:#0e0e18; border:1.5px solid #1a1a28; border-radius:16px; padding:1.4rem; margin-bottom:1rem; }
-        .label { font-size:11px; color:#333; letter-spacing:0.1em; font-weight:700; margin-bottom:0.7rem; text-transform:uppercase; }
+        .label { font-size:11px; color:#555; letter-spacing:0.1em; font-weight:700; margin-bottom:0.7rem; text-transform:uppercase; }
         .share-btn { padding:10px 20px; border-radius:10px; background:#14141f; border:1.5px solid #2a2a40; color:#888; font-size:13px; cursor:pointer; font-family:inherit; transition:all 0.2s; }
         .share-btn:hover { border-color:#4a4a80; color:#bbb; }
+        .donate-btn:hover { opacity:0.9; transform:translateY(-1px); }
       `}</style>
- 
+
       {/* Hero header */}
       <div style={{ background: "linear-gradient(180deg, #0e0e20 0%, #08080f 100%)", borderBottom: "1px solid #1a1a28", padding: "2.5rem 1rem 2rem", textAlign: "center" }}>
         <div style={{ fontSize: 42, marginBottom: 10 }}>🔧</div>
@@ -228,9 +228,9 @@ export default function ScamDetector() {
           ))}
         </div>
       </div>
- 
+
       <div style={{ maxWidth: 500, margin: "0 auto", padding: "1.5rem 1rem 3rem" }}>
- 
+
         {/* Input card */}
         <div className="card">
           <div style={{ display: "flex", gap: 8, marginBottom: "1.25rem" }}>
@@ -241,7 +241,7 @@ export default function ScamDetector() {
               📷 Upload invoice
             </button>
           </div>
- 
+
           {/* Location */}
           <div style={{ marginBottom: "1.1rem" }}>
             <div className="label">Your location <span style={{ color: "#ef4444" }}>*</span></div>
@@ -251,7 +251,7 @@ export default function ScamDetector() {
               {EXAMPLES.map(e => <button key={e} className="chip" onClick={() => setLocation(e)}>{e}</button>)}
             </div>
           </div>
- 
+
           {mode === "text" ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div>
@@ -298,57 +298,57 @@ export default function ScamDetector() {
                     </div>}
                 <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => handleFile(e.target.files[0])} />
               </div>
-              {imagePreview && <button onClick={() => { setImagePreview(null); setImageBase64(null); }} style={{ marginTop: 8, background: "none", border: "none", color: "#444", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>Remove photo</button>}
+              {imagePreview && <button onClick={() => { setImagePreview(null); setImageBase64(null); }} style={{ marginTop: 8, background: "none", border: "none", color: "#555", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>Remove photo</button>}
             </div>
           )}
- 
+
           <button className="go-btn" style={{ marginTop: "1.25rem" }} onClick={analyze} disabled={!canAnalyze || loading}>
             {loading ? "Checking prices..." : "🔍 Check if I was ripped off"}
           </button>
         </div>
- 
+
         {/* Loading */}
         {loading && (
           <div className="card" style={{ textAlign: "center", padding: "3rem 1rem" }}>
             <div style={{ width: 40, height: 40, border: "3px solid #1e1e30", borderTopColor: "#8080c0", borderRadius: "50%", margin: "0 auto 1.25rem", animation: "spin 0.8s linear infinite" }} />
-            <p style={{ color: "#444", fontSize: 14, margin: "0 0 4px", letterSpacing: "0.05em", animation: "pulse 1.5s ease infinite" }}>Checking repair prices in your area...</p>
-            <p style={{ color: "#222", fontSize: 12, margin: 0 }}>This usually takes 5–10 seconds</p>
+            <p style={{ color: "#666", fontSize: 14, margin: "0 0 4px", animation: "pulse 1.5s ease infinite" }}>Checking repair prices in your area...</p>
+            <p style={{ color: "#444", fontSize: 12, margin: 0 }}>This usually takes 5–10 seconds</p>
           </div>
         )}
- 
+
         {/* Result */}
         {result && !loading && (
           <div ref={resultRef} style={{ animation: "fadeUp 0.5s ease forwards" }}>
- 
+
             {/* Gauge hero */}
             <div style={{ background: bgCol, border: `1.5px solid ${borderCol}`, borderRadius: 20, padding: "2.5rem 1.5rem 2rem", marginBottom: "1rem", textAlign: "center" }}>
               <CircleGauge score={result.fairness_score || 0} color={result.color} face={result.face} animated={gaugeReady} />
               <div style={{ fontSize: 22, fontWeight: 900, color: hex, margin: "1.25rem 0 0.5rem", letterSpacing: "0.02em" }}>
                 {verdict?.label}
               </div>
-              <p style={{ color: "#666", fontSize: 14, margin: "0 auto", maxWidth: 340, lineHeight: 1.6 }}>{result.summary}</p>
+              <p style={{ color: "#888", fontSize: 14, margin: "0 auto", maxWidth: 340, lineHeight: 1.6 }}>{result.summary}</p>
             </div>
- 
+
             {/* Price breakdown */}
             <div className="card">
               <div className="label">Price breakdown</div>
               <div style={{ display: "flex", gap: 10, marginBottom: result.overcharge_percentage > 0 ? "1rem" : 0 }}>
                 <div style={{ flex: 1, background: "#08080f", borderRadius: 12, padding: "14px", textAlign: "center" }}>
-                  <div style={{ fontSize: 11, color: "#2a2a40", letterSpacing: "0.08em", marginBottom: 6, fontWeight: 700 }}>NORMAL PRICE</div>
+                  <div style={{ fontSize: 11, color: "#555", letterSpacing: "0.08em", marginBottom: 6, fontWeight: 700 }}>NORMAL PRICE</div>
                   <div style={{ fontSize: 19, fontWeight: 800, color: "#22c55e" }}>{result.currency_symbol}{result.fair_price_min}–{result.currency_symbol}{result.fair_price_max}</div>
-                  <div style={{ fontSize: 11, color: "#2a2a40", marginTop: 4 }}>what's typical in your area</div>
+                  <div style={{ fontSize: 11, color: "#555", marginTop: 4 }}>what's typical in your area</div>
                 </div>
                 <div style={{ flex: 1, background: "#08080f", borderRadius: 12, padding: "14px", textAlign: "center" }}>
-                  <div style={{ fontSize: 11, color: "#2a2a40", letterSpacing: "0.08em", marginBottom: 6, fontWeight: 700 }}>YOU PAID</div>
+                  <div style={{ fontSize: 11, color: "#555", letterSpacing: "0.08em", marginBottom: 6, fontWeight: 700 }}>YOU PAID</div>
                   <div style={{ fontSize: 19, fontWeight: 800, color: hex }}>{result.currency_symbol}{result.what_they_paid}</div>
-                  <div style={{ fontSize: 11, color: "#2a2a40", marginTop: 4 }}>what they charged you</div>
+                  <div style={{ fontSize: 11, color: "#555", marginTop: 4 }}>what they charged you</div>
                 </div>
               </div>
- 
+
               {result.overcharge_percentage > 0 && (
                 <div style={{ background: "#08080f", borderRadius: 12, padding: "14px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-                    <span style={{ fontSize: 13, color: "#444" }}>You overpaid by</span>
+                    <span style={{ fontSize: 13, color: "#666" }}>You overpaid by</span>
                     <span style={{ fontSize: 13, color: hex, fontWeight: 800 }}>{result.currency_symbol}{result.overcharge_amount} ({result.overcharge_percentage}% extra)</span>
                   </div>
                   <div style={{ height: 8, background: "#111", borderRadius: 99, overflow: "hidden" }}>
@@ -357,13 +357,13 @@ export default function ScamDetector() {
                 </div>
               )}
             </div>
- 
+
             {/* Explanation */}
             <div className="card">
               <div className="label">What this means</div>
               <p style={{ color: "#bbb", fontSize: 15, lineHeight: 1.75, margin: 0 }}>{result.explanation}</p>
             </div>
- 
+
             {/* Red flags */}
             {result.red_flags?.length > 0 && (
               <div style={{ background: "#100008", border: "1.5px solid #2a0818", borderRadius: 16, padding: "1.4rem", marginBottom: "1rem" }}>
@@ -376,7 +376,7 @@ export default function ScamDetector() {
                 ))}
               </div>
             )}
- 
+
             {/* Tip */}
             {result.tip && (
               <div style={{ background: "#031208", border: "1.5px solid #0a2a18", borderRadius: 16, padding: "1.4rem", marginBottom: "1rem" }}>
@@ -384,7 +384,7 @@ export default function ScamDetector() {
                 <p style={{ color: "#4a8a64", fontSize: 14, lineHeight: 1.65, margin: 0 }}>{result.tip}</p>
               </div>
             )}
- 
+
             {/* Actions */}
             <div style={{ display: "flex", gap: 10, marginBottom: "1rem" }}>
               <button className="share-btn" style={{ flex: 1 }} onClick={() => {
@@ -399,14 +399,35 @@ export default function ScamDetector() {
                 Check another →
               </button>
             </div>
- 
-            <p style={{ color: "#444", fontSize: 11, textAlign: "center", margin: 0 }}>
+
+            <p style={{ color: "#444", fontSize: 11, textAlign: "center", margin: "0 0 1.5rem" }}>
               Results are estimates based on average market prices. Always get multiple quotes.
             </p>
           </div>
         )}
+
+        {/* Donate section */}
+        <div style={{ background: "#0e0e18", border: "1.5px solid #1a1a28", borderRadius: 16, padding: "1.75rem 1.5rem", textAlign: "center", marginTop: "1rem" }}>
+          <div style={{ fontSize: 30, marginBottom: 10 }}>☕</div>
+          <h3 style={{ color: "#c0c0e0", fontSize: 16, fontWeight: 700, margin: "0 0 8px" }}>This tool is completely free</h3>
+          <p style={{ color: "#666", fontSize: 13, lineHeight: 1.65, margin: "0 auto 1.25rem", maxWidth: 300 }}>
+            If we helped you avoid getting ripped off, consider buying us a coffee. It keeps the tool running for everyone.
+          </p>
+          <a
+            href="https://paypal.me/OmShah118"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="donate-btn"
+            style={{ display: "inline-block", padding: "12px 32px", background: "#0070ba", borderRadius: 10, color: "#fff", fontWeight: 700, fontSize: 14, textDecoration: "none", transition: "all 0.2s" }}
+          >
+            ☕ Buy us a coffee
+          </a>
+          <p style={{ color: "#333", fontSize: 11, margin: "10px 0 0" }}>No pressure at all — using the tool is more than enough 🙏</p>
+        </div>
+
       </div>
     </div>
   );
 }
- 
+ENDOFFILE
+echo "done"
