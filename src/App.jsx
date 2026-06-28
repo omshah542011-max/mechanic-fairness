@@ -147,24 +147,17 @@ export default function ScamDetector() {
        messages = [{ role: "user", content: `This is my mechanic invoice. I live in ${location}. Can you check if I was charged a fair price? Please explain it simply.` }];
         }
 
-      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${import.meta.env.VITE_GROQ_KEY}`
-        },
-        body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
-          messages: [
-            { role: "system", content: SYSTEM },
-            { role: "user", content: messages[0].content }
-          ],
-          max_tokens: 1000
-        })
-      });
+ const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${import.meta.env.VITE_GEMINI_KEY}`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    contents: [{ parts: [{ text: SYSTEM + "\n\n" + messages[0].content }] }]
+  })
+});
 
-      const data = await res.json();
-      const text = data.choices?.[0]?.message?.content || "{}";
+const data = await res.json();
+const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+
       const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
       setResult(parsed);
       setTimeout(() => {
