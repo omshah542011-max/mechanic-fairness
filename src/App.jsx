@@ -147,7 +147,7 @@ export default function ScamDetector() {
        messages = [{ role: "user", content: `This is my mechanic invoice. I live in ${location}. Can you check if I was charged a fair price? Please explain it simply.` }];
         }
 
-const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${import.meta.env.VITE_GEMINI_KEY}`, {
+const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${import.meta.env.VITE_GEMINI_KEY}`, {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
