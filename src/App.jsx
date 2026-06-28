@@ -144,11 +144,8 @@ export default function ScamDetector() {
       if (mode === "text") {
         messages = [{ role: "user", content: `What the mechanic did: ${description}\nHow much they charged: ${price}\nLocation: ${location}\n\nWas this fair?` }];
       } else {
-        messages = [{ role: "user", content: [
-          { type: "image", source: { type: "base64", media_type: imageType, data: imageBase64 } },
-          { type: "text", text: `This is my mechanic invoice. I live in ${location}. Can you check if I was charged a fair price? Please explain it simply.` }
-        ]}];
-      }
+       messages = [{ role: "user", content: `This is my mechanic invoice. I live in ${location}. Can you check if I was charged a fair price? Please explain it simply.` }];
+        }
 
       const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
@@ -157,7 +154,7 @@ export default function ScamDetector() {
           "Authorization": `Bearer ${import.meta.env.VITE_GROQ_KEY}`
         },
         body: JSON.stringify({
-          model: "llama3-8b-8192",
+          model: "llama-3.3-70b-versatile",
           messages: [
             { role: "system", content: SYSTEM },
             { role: "user", content: messages[0].content }
