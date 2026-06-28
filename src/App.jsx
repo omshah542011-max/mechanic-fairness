@@ -1,5 +1,3 @@
-Claude code
-
 import { useState, useRef, useEffect } from "react";
 
 const SYSTEM = `You are a friendly car repair expert helping everyday people understand if they got ripped off at a mechanic. Your audience has NO car knowledge — they are anxious, confused, and just want a straight answer.
