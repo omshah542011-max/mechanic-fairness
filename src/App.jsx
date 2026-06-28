@@ -1,3 +1,5 @@
+Claude code
+
 import { useState, useRef, useEffect } from "react";
 
 const SYSTEM = `You are a friendly car repair expert helping everyday people understand if they got ripped off at a mechanic. Your audience has NO car knowledge — they are anxious, confused, and just want a straight answer.
@@ -126,10 +128,7 @@ export default function ScamDetector() {
     if (!file || !file.type.startsWith("image/")) return;
     setImageType(file.type);
     const reader = new FileReader();
-    reader.onload = (e) => { 
-      setImagePreview(e.target.result); 
-      setImageBase64(e.target.result.split(",")[1]); 
-    };
+    reader.onload = (e) => { setImagePreview(e.target.result); setImageBase64(e.target.result.split(",")[1]); };
     reader.readAsDataURL(file);
   }
 
@@ -143,35 +142,23 @@ export default function ScamDetector() {
     setGaugeReady(false);
 
     try {
-      let partsArray = [];
-
+      let messages;
       if (mode === "text") {
-        partsArray = [
-          { text: SYSTEM + `\n\nUser Question:\nWhat the mechanic did: ${description}\nHow much they charged: ${price}\nLocation: ${location}\n\nWas this fair?` }
-        ];
+        messages = [{ role: "user", content: `What the mechanic did: ${description}\nHow much they charged: ${price}\nLocation: ${location}\n\nWas this fair?` }];
       } else {
-        partsArray = [
-          { text: SYSTEM + `\n\nUser Question:\nThis is my mechanic invoice image attachment. I live in ${location}. Can you check if I was charged a fair price? Please explain it simply.` },
-          { inlineData: { mimeType: imageType, data: imageBase64 } }
-        ];
-      }
+       messages = [{ role: "user", content: `This is my mechanic invoice. I live in ${location}. Can you check if I was charged a fair price? Please explain it simply.` }];
+        }
 
-      // Updated to endpoint 'gemini-2.5-flash' and included structured config output options
-      const res = await fetch(`https://googleapis.com{import.meta.env.VITE_GEMINI_KEY}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: partsArray }],
-          generationConfig: {
-            responseMimeType: "application/json"
-          }
-        })
-      });
+const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_KEY}`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    contents: [{ parts: [{ text: SYSTEM + "\n\n" + messages[0].content }] }]
+  })
+});
 
-      if (!res.ok) throw new Error("API call failed");
-
-      const data = await res.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+const data = await res.json();
+const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
 
       const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
       setResult(parsed);
@@ -179,18 +166,8 @@ export default function ScamDetector() {
         setGaugeReady(true);
         setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
       }, 100);
-    } catch (err) {
-      console.error(err);
-      setResult({ 
-        verdict: "error", 
-        face: "⚠️", 
-        color: "red", 
-        fairness_score: 0, 
-        summary: "Something went wrong. Please try again.", 
-        explanation: "We couldn't connect to our analysis system. Please check your internet and try again.", 
-        red_flags: [], 
-        tip: "" 
-      });
+    } catch {
+      setResult({ verdict: "error", face: "⚠️", color: "red", fairness_score: 0, summary: "Something went wrong. Please try again.", explanation: "We couldn't connect to our analysis system. Please check your internet and try again.", red_flags: [], tip: "" });
       setGaugeReady(true);
     }
     setLoading(false);
@@ -202,19 +179,73 @@ export default function ScamDetector() {
   const verdict = result ? (verdictMap[result.verdict] || { label: result.verdict?.toUpperCase(), sub: "" }) : null;
 
   return (
-    <div style={{ fontFamily: "'system-ui', -apple-system, sans-serif", background: "#08080f", minHeight: "100vh", color: "#f0f0f0", padding: "20px" }}>
-      {/* Rest of your component rendering logic continues safely below */}
-      <h2>Car Mechanic Repair Fairness Checker</h2>
-      
-      <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
-        <button onClick={() => setMode("text")} style={{ background: mode === "text" ? "#22c55e" : "#1e1e2e", color: "#fff", border: "none", padding: "10px 20px", borderRadius: "5px", cursor: "pointer" }}>Text Mode</button>
-        <button onClick={() => setMode("image")} style={{ background: mode === "image" ? "#22c55e" : "#1e1e2e", color: "#fff", border: "none", padding: "10px 20px", borderRadius: "5px", cursor: "pointer" }}>Invoice Upload Mode</button>
+    <div style={{ fontFamily: "'system-ui', -apple-system, sans-serif", background: "#08080f", minHeight: "100vh", color: "#f0f0f0" }}>
+      <style>{`
+        @keyframes spin { to{transform:rotate(360deg)} }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        * { box-sizing: border-box; }
+        .inp { width:100%; background:#0e0e18; border:1.5px solid #1e1e30; border-radius:12px; padding:12px 15px; color:#f0f0f0; font-size:15px; font-family:inherit; outline:none; transition:border 0.2s, box-shadow 0.2s; }
+        .inp:focus { border-color:#4a4a80; box-shadow: 0 0 0 3px rgba(74,74,128,0.15); }
+        .inp.error { border-color:#ef4444; }
+        .inp::placeholder { color:#333; }
+        .mode-btn { flex:1; padding:11px 0; border-radius:10px; border:1.5px solid #1e1e30; background:transparent; color:#666; cursor:pointer; font-size:13px; font-weight:700; letter-spacing:0.03em; transition:all 0.2s; font-family:inherit; }
+        .mode-btn.active { background:#14141f; color:#d0d0f0; border-color:#3a3a60; }
+        .go-btn { width:100%; padding:15px; border-radius:12px; border:none; background:linear-gradient(135deg,#ffffff,#d0d0f0); color:#08080f; font-size:15px; font-weight:800; letter-spacing:0.06em; cursor:pointer; transition:all 0.2s; font-family:inherit; }
+        .go-btn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 8px 30px rgba(255,255,255,0.15); }
+        .go-btn:disabled { opacity:0.25; cursor:not-allowed; transform:none; }
+        .drop { border:2px dashed #1e1e30; border-radius:14px; padding:3rem 1rem; text-align:center; cursor:pointer; transition:all 0.2s; }
+        .drop.drag { border-color:#4a4a80; background:#0e0e18; }
+        .chip { padding:6px 12px; border-radius:8px; background:#0e0e18; border:1.5px solid #1e1e30; color:#777; font-size:12px; cursor:pointer; font-family:inherit; transition:all 0.15s; white-space:nowrap; }
+        .chip:hover { border-color:#4a4a80; color:#bbb; background:#14141f; }
+        .scenario { padding:8px 12px; border-radius:8px; background:#0e0e18; border:1.5px solid #1e1e30; color:#888; font-size:13px; cursor:pointer; font-family:inherit; transition:all 0.15s; text-align:left; width:100%; }
+        .scenario:hover { border-color:#4a4a80; color:#ccc; }
+        .flag { display:flex; gap:10px; font-size:14px; color:#fca5a5; padding:8px 0; border-bottom:1px solid #1a1a28; line-height:1.5; }
+        .flag:last-child { border-bottom:none; }
+        .card { background:#0e0e18; border:1.5px solid #1a1a28; border-radius:16px; padding:1.4rem; margin-bottom:1rem; }
+        .label { font-size:11px; color:#777; letter-spacing:0.1em; font-weight:700; margin-bottom:0.7rem; text-transform:uppercase; }
+        .share-btn { padding:10px 20px; border-radius:10px; background:#14141f; border:1.5px solid #2a2a40; color:#999; font-size:13px; cursor:pointer; font-family:inherit; transition:all 0.2s; }
+        .share-btn:hover { border-color:#4a4a80; color:#ddd; }
+        .donate-btn { display:inline-block; padding:12px 32px; background:#0070ba; border-radius:10px; color:#fff; font-weight:700; font-size:14px; text-decoration:none; transition:all 0.2s; }
+        .donate-btn:hover { background:#005ea6; transform:translateY(-1px); box-shadow:0 6px 20px rgba(0,112,186,0.3); }
+        .tip-dot { display:flex; align-items:flex-start; gap:8px; font-size:12px; color:#888; padding:3px 0; line-height:1.5; }
+      `}</style>
+
+      {/* Hero */}
+      <div style={{ background: "linear-gradient(180deg, #0e0e20 0%, #08080f 100%)", borderBottom: "1px solid #1a1a28", padding: "2.5rem 1rem 2rem", textAlign: "center" }}>
+        <div style={{ fontSize: 42, marginBottom: 10 }}>🔧</div>
+        <h1 style={{ fontSize: 30, fontWeight: 900, letterSpacing: "0.06em", margin: "0 0 8px", background: "linear-gradient(135deg,#ffffff,#8080c0)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+          Did Your Mechanic<br />Rip You Off?
+        </h1>
+        <p style={{ color: "#aaa", fontSize: 15, margin: "0 auto", maxWidth: 320, lineHeight: 1.6 }}>
+          Tell us what they did and how much they charged. We'll tell you if it's fair — in plain English.
+        </p>
+        <div style={{ display: "flex", justifyContent: "center", gap: 16, marginTop: 16, flexWrap: "wrap" }}>
+          {["No car knowledge needed", "Free to use", "Instant results"].map(t => (
+            <span key={t} style={{ fontSize: 12, color: "#777", display: "flex", alignItems: "center", gap: 5 }}>
+              <span style={{ color: "#22c55e" }}>✓</span> {t}
+            </span>
+          ))}
+        </div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "15px", maxWidth: "500px", background: "#111122", padding: "20px", borderRadius: "8px" }}>
-        <div>
-          <label style={{ display: "block", marginBottom: "5px" }}>Your Location (City, Country):</label>
-          <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. New York, USA" style={{ width: "100%", padding: "8px", background: "#08080f", border: locationError ? "1px solid red" : "1px solid #333", color: "#fff", borderRadius: "4px" }} />
+      <div style={{ maxWidth: 500, margin: "0 auto", padding: "1.5rem 1rem 3rem" }}>
+
+        {/* Input card */}
+        <div className="card">
+          <div style={{ display: "flex", gap: 8, marginBottom: "1.25rem" }}>
+            <button className={`mode-btn ${mode === "text" ? "active" : ""}`} onClick={() => { setMode("text"); setResult(null); }}>
+              ✏️ Describe it
+            </button>
+            <button className={`mode-btn ${mode === "photo" ? "active" : ""}`} onClick={() => { setMode("photo"); setResult(null); }}>
+              📷 Upload invoice
+            </button>
+          </div>
+
+          {/* Location */}
+          <div style={{ marginBottom: "1.1rem" }}>
+            <div className="label">Your location <span style={{ color: "#ef4444" }}>*</span></div>
+            <input className={`inp ${locationError ? "error" : ""}`} placeholder="e.g. New York, USA" value={location} onChange={e => { setLocation(e.target.value); setLocationError(false); }} />
             {locationError && <p style={{ color: "#ef4444", fontSize: 12, margin: "5px 0 0" }}>We need your location to check local prices</p>}
             <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
               {EXAMPLES.map(e => <button key={e} className="chip" onClick={() => setLocation(e)}>{e}</button>)}
